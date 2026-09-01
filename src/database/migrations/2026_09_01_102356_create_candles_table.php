@@ -22,11 +22,11 @@ return new class extends Migration
 
             $table->timestamp('open_time');
 
-            $table->decimal('open', 30, 12);
-            $table->decimal('high', 30, 12);
-            $table->decimal('low', 30, 12);
-            $table->decimal('close', 30, 12);
-            $table->decimal('volume', 40, 18)->nullable();
+            $table->decimal('open');
+            $table->decimal('high');
+            $table->decimal('low');
+            $table->decimal('close');
+            $table->decimal('volume')->nullable();
 
             $table->unique(
                 ['market_id', 'timeframe', 'open_time'],

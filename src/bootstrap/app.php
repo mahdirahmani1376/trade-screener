@@ -19,5 +19,5 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })->withSchedule(function (Schedule $schedule) {
-        $schedule->command('insert:hourly-candles')->hourly();
+        $schedule->command('app:inset-hourly-candles')->hourly();
     })->create();
