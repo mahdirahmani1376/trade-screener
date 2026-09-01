@@ -6,7 +6,10 @@ use App\Models\Candle;
 use App\Models\Market;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Morilog\Jalali\Jalalian;
 
 class FVGDetectorBacktestCommand extends Command
@@ -89,13 +92,16 @@ class FVGDetectorBacktestCommand extends Command
                 $this->info('bearish fvg detected');
                 $this->info($jalali->toDateTimeString());
                 $this->info(json_encode($candle));
+                $this->alertIfNew($market,$jalali->toDateTimeString(),'bearish');
                 $this->info(PHP_EOL);
             }
             // bullish
             if ($this->isBullishFVG($candle)) {
                 $this->info('bullish fvg detected');
                 $this->info($jalali->toDateTimeString());
+                $this->alertIfNew($market,$jalali->toDateTimeString(),'bullish');
                 $this->info(json_encode($candle));
+
                 $this->info(PHP_EOL);
 
 
@@ -181,6 +187,38 @@ class FVGDetectorBacktestCommand extends Command
         }
 
         return true;
+
+    }
+
+    private function alertIfNew(
+        Market $market,
+        $open_time,
+        string $direction
+    ): void {
+        $key = sprintf(
+            'fvg-alert:%s:%s:%s',
+            $market->symbol,
+            $open_time,
+            $direction
+        );
+
+        if (! Cache::add($key, true)) {
+            try {
+                Http::post(
+                    'https://api.telegram.org/bot' . config('services.telegram.bot_token') . '/sendMessage',
+                    [
+                        'chat_id' => config('services.telegram.chat_id'),
+                        'text' => "🚨 BTCUSDT {$direction} FVG detected on time {$open_time}",
+                    ]
+                );
+            } catch (\Exception $e) {
+                $this->error("{$e->getMessage()}");
+                Log::error('telegram message sending error',[
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+        }
 
     }
 
