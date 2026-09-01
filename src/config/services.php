@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'wallex' => [
+        'token' => env('WALLEX_TOKEN')
+    ]
+
 ];
