@@ -76,7 +76,12 @@ services:
 
   redis:
     image: redis:latest
+
     container_name: trade-screener-redis
+
+    ports:
+      - "6380:6379"
+
     volumes:
       - redis-data:/data
 
