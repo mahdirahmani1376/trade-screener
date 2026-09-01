@@ -1,0 +1,133 @@
+x-laravel: &laravel
+  env_file:
+    - path: ./.env
+      required: true
+
+  build:
+    context: .
+    dockerfile: ./docker/Dockerfile.dev
+    args:
+      UID: ${DOCKER_UID:-1000}
+      GID: ${DOCKER_GID:-1000}
+      USER: ${DOCKER_USER:-mahdi}
+
+  networks:
+    - app-network
+
+  volumes:
+    - ./src:/var/www/html
+    - ./python:/var/www/python
+    - ./infra/php.ini:/usr/local/etc/php/php.ini
+
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+
+services:
+
+  php:
+    <<: *laravel
+    command: php-fpm
+    container_name: trade-screener-php
+
+
+  horizon:
+    <<: *laravel
+    container_name: trade-screener-horizon
+    command: php artisan horizon
+
+
+  nginx:
+    image: nginx:latest
+    container_name: trade-screener-nginx
+
+    ports:
+      - "80:80"
+
+    volumes:
+      - ./src:/var/www/html
+      - ./infra/nginx/local/default.conf:/etc/nginx/conf.d/default.conf
+
+    depends_on:
+      - php
+
+    networks:
+      - app-network
+
+    restart: unless-stopped
+
+
+  postgres:
+    image: postgres:17
+
+    container_name: trade-screener-postgres
+
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+    networks:
+      - app-network
+
+    restart: unless-stopped
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  redis:
+    image: redis:latest
+
+    container_name: trade-screener-redis
+
+    ports:
+      - "6380:6379"
+
+    volumes:
+      - redis-data:/data
+
+    networks:
+      - app-network
+
+    restart: unless-stopped
+
+    command: redis-server --appendonly yes
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+volumes:
+  postgres-data:
+    name: trade-screener-postgres-data
+
+  redis-data:
+    name: trade-screener-redis-data
+
+
+networks:
+  app-network:
+    driver: bridge

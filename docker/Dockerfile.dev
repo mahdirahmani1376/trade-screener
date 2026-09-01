@@ -1,0 +1,73 @@
+FROM php:8.3-fpm
+
+ARG UID=1000
+ARG GID=1000
+ARG USER=mahdi
+
+USER root
+
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    zip \
+    curl \
+    libpq-dev \
+    libzip-dev \
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    libicu-dev \
+    libpng-dev \
+    python3 \
+    python3-pip \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/* \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install \
+        pdo \
+        pdo_pgsql \
+        zip \
+        gd \
+        pcntl \
+        intl
+
+
+# Redis PHP extension
+RUN pecl install redis \
+    && docker-php-ext-enable redis
+
+
+# Xdebug
+RUN pecl install xdebug \
+    && docker-php-ext-enable xdebug
+
+
+# Composer
+COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
+
+
+# --------------------------------------------------
+# Python environment
+# --------------------------------------------------
+
+RUN python3 -m venv /opt/python-venv
+
+ENV PATH="/opt/python-venv/bin:$PATH"
+
+COPY ./infra/python/requirements.txt /tmp/python-requirements.txt
+
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir \
+        -r /tmp/python-requirements.txt
+
+# --------------------------------------------------
+# User
+# --------------------------------------------------
+
+RUN groupadd -g ${GID} ${USER} \
+    && useradd -m -u ${UID} -g ${USER} ${USER} \
+    && usermod -aG ${USER} www-data
+
+
+EXPOSE 9000
+
+USER ${USER}
