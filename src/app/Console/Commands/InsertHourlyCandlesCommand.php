@@ -1,16 +1,20 @@
 <?php
 
-namespace Database\Seeders;
+namespace App\Console\Commands;
 
 use App\Models\Candle;
 use App\Models\Market;
 use Carbon\Carbon;
-use Illuminate\Database\Seeder;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
-class DataSeeder extends Seeder
+class InsertHourlyCandlesCommand extends Command
 {
-    public function run(): void
+    protected $signature = 'insert:hourly-candles';
+
+    protected $description = 'Command description';
+
+    public function handle(): void
     {
         $market = Market::updateOrCreate(
             ['symbol' => 'BTCUSDT'],
@@ -21,9 +25,9 @@ class DataSeeder extends Seeder
             ->subHour()
             ->startOfHour();
 
-        $from = $to
-            ->copy()
-            ->subDays(7);
+        $from = now()
+            ->subHours(2)
+            ->startOfHour();
 
         $response = Http::withToken(config('services.wallex.token'))
             ->acceptJson()
@@ -84,15 +88,15 @@ class DataSeeder extends Seeder
             ],
         );
 
-        $this->command->info(
+        $this->info(
             "BTCUSDT: {$market->symbol} market created/updated."
         );
 
-        $this->command->info(
+        $this->info(
             count($rows) . ' hourly candles synchronized.'
         );
 
-        $this->command->info(
+        $this->info(
             "Range: {$from} → {$to}"
         );
     }
