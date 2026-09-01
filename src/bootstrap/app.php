@@ -19,5 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })->withSchedule(function (Schedule $schedule) {
-        $schedule->command('app:inset-hourly-candles')->hourly();
+        $schedule->command('app:insert-hourly-candles')->hourly()
+            ->then(function () {
+            Artisan::call('app:detect-fvg-cron');
+            });
     })->create();

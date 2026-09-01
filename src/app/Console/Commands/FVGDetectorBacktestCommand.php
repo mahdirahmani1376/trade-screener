@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Morilog\Jalali\Jalalian;
 
-class FVGDetectorCommand extends Command
+class FVGDetectorBacktestCommand extends Command
 {
     protected $signature = 'app:detect-fvg';
 

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 
 class InsertHourlyCandlesCommand extends Command
 {
-    protected $signature = 'app:inset-hourly-candles';
+    protected $signature = 'app:insert-hourly-candles';
 
     protected $description = 'Command description';
 
