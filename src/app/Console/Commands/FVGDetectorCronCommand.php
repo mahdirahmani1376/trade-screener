@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Jobs\SendTelegramMessageJob;
 use App\Models\Candle;
 use App\Models\Market;
 use Carbon\Carbon;
@@ -122,20 +123,7 @@ class FVGDetectorCronCommand extends Command
         );
 
         if (! Cache::add($key, true)) {
-            try {
-                Http::post(
-                    'https://api.telegram.org/bot' . config('services.telegram.bot_token') . '/sendMessage',
-                    [
-                        'chat_id' => config('services.telegram.chat_id'),
-                        'text' => "🚨 BTCUSDT {$direction} FVG detected",
-                    ]
-                );
-            } catch (\Exception $e) {
-                Log::error('telegram message sending error',[
-                    'error' => $e->getMessage()
-                ]);
-            }
-
+            SendTelegramMessageJob::dispatch($direction,$candle2->open_time->toDateTimeString());
         }
 
     }

@@ -36,6 +36,13 @@ services:
     command: php-fpm
     container_name: trade-screener-php
 
+
+  horizon:
+    <<: *laravel
+    container_name: trade-screener-horizon
+    command: php artisan horizon
+
+
   nginx:
     image: nginx:latest
     container_name: trade-screener-nginx
